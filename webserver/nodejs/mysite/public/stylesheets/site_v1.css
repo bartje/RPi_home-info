@@ -1,0 +1,130 @@
+body, h1,h2,h3,h4,h5,h6 {font-family: "Montserrat", sans-serif}
+.w3-row-padding img {margin-bottom: 12px}
+
+/* Set the width of the sidebar to 120px */
+.w3-sidebar {width: 120px;background: #222;}
+
+/* Add a left margin to the "page content" that matches the width of the sidebar (120px) */
+#main {margin-left: 120px}
+
+
+.widget__layout {
+    display: -webkit-box;
+    display: -ms-flexbox;
+    display: flex;
+    -webkit-box-orient: horizontal;
+    -webkit-box-direction: normal;
+    -ms-flex-direction: row;
+    flex-direction: row;
+    /*
+    -webkit-box-align: start;
+    -ms-flex-align: start;
+    align-items: flex-start;
+    -webkit-box-pack: center;
+    -ms-flex-pack: center;
+    justify-content: center;
+    -ms-flex-wrap: wrap;
+    flex-wrap: wrap;
+    overflow-x: auto
+    */
+}
+.widget__temperature {
+    width: 25%;
+    /*margin-right: 5%;*/
+    margin-right: 30px
+}
+.widget__graphic {
+    width: 70%
+}
+
+
+
+@media (max-width:1000px) {
+    .widget__layout {
+        -webkit-box-orient: vertical;
+        -webkit-box-direction: normal;
+        -ms-flex-direction: column;
+        flex-direction: column
+    }
+
+    .widget__temperature {
+        width: 100%;
+        margin-bottom: 30px
+    }
+
+    .widget__graphic {
+        width: 100%
+    }
+}
+
+.weather-widget {
+    min-width: 240px;
+    /*font: 400 14px / 1.4 Roboto, Arial, sans-serif*/
+}
+.weather-widget__temperature {
+    /*font: 600 30px / 1.4 Oswald, Arial, sans-serif*/
+    background-color: #565656;
+    text-align: center;
+    line-height:50px;
+}
+.weather-widget__temperature img {
+    vertical-align: middle;
+}
+.weather-widget__main:first-letter {
+    text-transform: uppercase
+}
+
+.weather-widget__items {
+    /*font: 400 14px / 1.4 Roboto, Arial, sans-serif;*/
+    border: 1px solid #222222;
+    width: 100%
+}
+.weather-widget__item td {
+    text-align: left;
+    padding: 5px;
+    border: 1px solid #222222;
+}
+.weather-widget__item:nth-child(odd) {
+    background-color: #565656
+}
+
+.weather-forecast-icons {
+    color: #565656;
+    margin-left: 3%;
+    margin-right: 3%;
+    display: -webkit-box;
+    display: -ms-flexbox;
+    display: flex;
+    -webkit-box-orient: horizontal;
+    -webkit-box-direction: normal;
+    -ms-flex-direction: row;
+    flex-direction: row
+}
+
+.weather-forecast-icons__item {
+    display: inline-block;
+    vertical-align: top;
+    padding-right: 2px;
+    text-align: center;
+    font-size: x-small;
+    width: 10%;
+}
+
+.weather-forecast-icons__item:last-child {
+    padding-right: 2px;
+}
+
+.weather-forecast-icons__item--active {
+    display: inline-block;
+    vertical-align: top;
+    padding-right: 5px;
+    text-align: center;
+    background-color: #eee;
+    font-size: x-small
+}
+
+
+
+/* Remove margins from "page content" on small screens
+@media only screen and (max-width: 600px) {#main {margin-left: 0}}
+*/

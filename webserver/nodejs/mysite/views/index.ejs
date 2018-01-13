@@ -1,0 +1,280 @@
+<!DOCTYPE html>
+
+<!--
+	
+Credits to:
+template:
+W3school
+https://www.w3schools.com/css/css_rwd_templates.asp
+
+Fonts:
+Font Awesome 4.7.0 by @davegandy - http://fontawesome.io - @fontawesome
+License - http://fontawesome.io/license (Font: SIL OFL 1.1, CSS: MIT License)
+
+-->
+
+<html>
+<title>Home</title>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<link rel="stylesheet" href="/stylesheets/w3.css">
+<link rel="stylesheet" href="/stylesheets/site_v1.css">
+<link rel="stylesheet" href="https://fonts.googleapis.com/css?family=Montserrat">
+<!--<link rel="stylesheet" href="/stylesheets/fontawesome_5.0.2/fontawesome.min.css">  -->
+<link rel="stylesheet" href="/font-awesome/font-awesome.min.css">
+
+<script src="/javascripts/jquery-3.2.1.min.js"></script>
+<script src="/javascripts/Chart.bundle.min.js"></script>
+<script src="/javascripts/socket.io.js"></script>
+<script src="/javascripts/moment.js"></script>
+<script src="/javascripts/scripts.js"></script>
+
+
+
+
+<body class="w3-black">
+
+<!-- Icon Bar (Sidebar - hidden on small screens) -->
+<nav class="w3-sidebar w3-bar-block w3-small w3-hide-small w3-center">
+  
+  <!-- Avatar image in top left corner -->
+  <!-- <img src="/images/avatar.jpg" style="width:100%"> -->
+  <a onclick="set_visibility(['weather','pvsystem','hotwater','heating','metering'],['home']);" class="w3-bar-item w3-button w3-padding-large w3-hover-black">
+    <i class="fa fa-home w3-xxlarge"></i>
+    <p>HOME</p>
+  </a>
+  <a onclick="set_visibility(['home','pvsystem','hotwater','heating','metering'],['weather']);" class="w3-bar-item w3-button w3-padding-large w3-hover-black">
+    <i class="fa fa-thermometer-full w3-xxlarge"></i>
+    <p>WEATHER</p>
+  </a>
+  <a onclick="set_visibility(['home','weather','hotwater','heating','metering'],['pvsystem']); change_solar_type('Detail', 0, 1);" class="w3-bar-item w3-button w3-padding-large w3-hover-black">
+    <i class="fa fa-sun-o w3-xxlarge"></i>
+    <p>PV-SYSTEM</p>
+  </a>
+  <a onclick="set_visibility(['home','weather','pvsystem','heating','metering'],['hotwater']);" class="w3-bar-item w3-button w3-padding-large w3-hover-black">
+    <i class="fa fa-bath w3-xxlarge"></i>
+    <p>HOT WATER</p>
+  </a>
+  <a onclick="set_visibility(['home','weather','hotwater','pvsystem','metering'],['heating']);" class="w3-bar-item w3-button w3-padding-large w3-hover-black">
+    <i class="fa fa-snowflake-o w3-xxlarge"></i>
+    <p>HEATING</p>
+  </a>
+  <a onclick="set_visibility(['home','weather','hotwater','heating','pvsystem'],['metering']);" class="w3-bar-item w3-button w3-padding-large w3-hover-black">
+    <i class="fa fa-bar-chart w3-xxlarge"></i>
+    <p>METERING</p>
+  </a>
+</nav>
+
+
+
+<!-- Navbar on small screens (Hidden on medium and large screens) -->
+<div class="w3-top w3-hide-large w3-hide-medium" id="myNavbar">
+  <div class="w3-bar w3-black w3-opacity w3-hover-opacity-off w3-center w3-small">
+    <a onclick="set_visibility(['weather','pvsystem','hotwater','heating','metering'],['home']);" class="w3-bar-item w3-button" style="width:16% !important">HOME</a>
+    <a onclick="set_visibility(['home','pvsystem','hotwater','heating','metering'],['weather']);" class="w3-bar-item w3-button" style="width:17% !important">WEATHER</a>
+    <a onclick="set_visibility(['home','weather','hotwater','heating','metering'],['pvsystem']); change_solar_type('Detail', 0, 1);" class="w3-bar-item w3-button" style="width:17% !important">PV-SYSTEM</a>
+    <a onclick="set_visibility(['home','weather','pvsystem','heating','metering'],['hotwater']); " class="w3-bar-item w3-button" style="width:17% !important">HOT WATER</a>
+    <a onclick="set_visibility(['home','weather','hotwater','pvsystem','metering'],['heating']);" class="w3-bar-item w3-button" style="width:16% !important">HEATING</a>
+    <a onclick="set_visibility(['home','weather','hotwater','heating','pvsystem'],['metering']);" class="w3-bar-item w3-button" style="width:17% !important">METERING</a>
+  </div>
+</div>
+
+
+
+<!-- Page Content -->
+<div class="w3-padding-large" id="main">
+  
+  
+  <!-- Header/Home -->
+  <header class="w3-container w3-padding-32 w3-center w3-black" id="home">
+    <h1 class="w3-jumbo"><span class="w3-hide-small">Home Monitor</h1>
+    <p>en nog wat tekst</p>
+    <!-- <img src="/images/xxxxxx.jpg" alt="main picture" class="w3-image" width="500" height="500"> -->
+  </header>
+
+  
+  
+  
+  
+  
+  
+  <!-- Weather Section -->
+  <!-- <div class="w3-content w3-justify w3-text-grey w3-padding-32" id="weather" style="display:none"> -->
+  <div class="w3-content w3-padding-32" id="weather" style="display:none">	
+  	<h2 class="w3-text-light-grey">Weather</h2>
+	<hr style="width:200px" class="w3-opacity">
+    <!-- Grid for forecast -->
+	
+	<div class="widget__layout">
+		<div class="widget__temperature">
+			<div class="weather-widget">
+			<h3 class="weather-widget__temperature" id="weather_now_temp">
+			
+			</h3>
+				<table class="weather-widget__items">
+					<tbody>
+						<tr class="weather-widget__item">
+							<td>Wind</td>
+							<td id="weather-widget-wind"></td>
+						</tr>
+						<tr class="weather-widget__item">
+							<td>Clouds</td>
+							<td id="weather-widget-cloudiness"></td>
+						</tr>
+						<tr class="weather-widget__item">
+							<td>Pressure</td>
+							<td id="weather-widget-pressure"></td>
+						</tr>
+						<tr class="weather-widget__item">
+							<td>Humidity</td>
+							<td id="weather-widget-humidity"></td>
+						</tr>
+						<tr class="weather-widget__item">
+							<td>Sunrise</td>
+							<td id="weather-widget-sunrise"></td>
+						</tr>
+						<tr class="weather-widget__item">
+							<td>Sunset</td>
+							<td id="weather-widget-sunset"></td>
+						</tr>
+					</tbody>
+				</table>
+			</div>
+		</div>
+		<div class="widget__graphic">
+			<div>
+				<canvas id="forecast_chart" width="200px" max-height="200px"</canvas>
+			</div>
+			<div class="weather-forecast-icons" id="forecast_icons">
+				/*
+				<div class="weather-forecast-icons__item">
+				veel meer dan een test</div>
+				<div class="weather-forecast-icons__item">
+				test</div>
+				<div class="weather-forecast-icons__item">
+				test</div>
+				<div class="weather-forecast-icons__item">
+				veel meer dan een test</div>
+				<div class="weather-forecast-icons__item">
+				test</div>
+				<div class="weather-forecast-icons__item">
+				test</div>
+				<div class="weather-forecast-icons__item">
+				veel meer dan een test</div>
+				<div class="weather-forecast-icons__item">
+				test</div>
+				<div class="weather-forecast-icons__item">
+				test</div>
+				<div class="weather-forecast-icons__item">
+				veel meer dan een test</div>
+				*/
+
+				
+			</div>
+			
+		</div>
+	</div>
+	
+
+
+  
+    
+  </div>  
+  <!-- End weather Section -->
+
+  
+  
+  
+  
+  <!-- PV-system Section -->
+  <!--
+  Idee is om enkel tabbladen te maken
+  tabblad 1: productievermogen van vandaag / rendement
+  tabblad 2: dagopbrengst van voorbije week + piekvermogen
+  tabblad 3: maandopbrengsten van voorbije jaar
+  
+  get_solar_detail
+-->
+  <div class="w3-padding-32 w3-content" id="pvsystem" style="display:none">
+    <h2 class="w3-text-light-grey" style="display: inline;">PV System</h2>&nbsp &nbsp &nbsp 
+		<a onclick="change_solar_type('Detail', 0, 1);" style="cursor:pointer">vandaag</a>
+    	 - 
+    	<a onclick="change_solar_type('Daily');" style="cursor:pointer">dag</a>
+    	 - 
+    	<a onclick="change_solar_type('Monthly');" style="cursor:pointer">maand</a>
+    	&nbsp;&nbsp;&nbsp;   
+    	
+    	
+    	
+    	 
+		<table style="display: inline;">
+			<tr>
+				<th rowspan="2"><a onclick="change_solar_end(-1);" style="cursor:pointer">&#8592;</a></th>
+				<th ><a onclick="change_solar_number(1);" style="cursor:pointer">&#8593;</a></th>
+				<th rowspan="2"><a onclick="change_solar_end(1);" style="cursor:pointer">&#8594;</a></th>
+			</tr>
+			<tr>
+				<td><a onclick="change_solar_number(-1);" style="cursor:pointer">&#8595;</a></td>
+			</tr>
+		</table>
+
+    <hr style="width:200px" class="w3-opacity">
+  
+  
+	<canvas id="pvchart_today" width="200px" max-height="200px"</canvas>
+		  
+  
+  
+  </div> 
+  <!-- End PV-System Section -->
+  
+
+
+
+  <!-- Hot Water Section -->
+  <div class="w3-padding-64 w3-content w3-text-grey" id="hotwater" style="display:none">
+    <h2 class="w3-text-light-grey">Hot Water</h2>
+    <hr style="width:200px" class="w3-opacity">
+  </div>
+  <!-- End Hot Water Section -->
+  
+  
+  
+  <!-- Heating Section -->
+  <div class="w3-padding-64 w3-content w3-text-grey" id="heating" style="display:none">
+    <h2 class="w3-text-light-grey">Heating</h2>
+    <hr style="width:200px" class="w3-opacity">
+  </div>
+  <!-- End Heating Section -->
+
+  <!-- Metering Section -->
+  <div class="w3-padding-64 w3-content w3-text-grey" id="metering" style="display:none">
+    <h2 class="w3-text-light-grey">Metering</h2>
+    <hr style="width:200px" class="w3-opacity">
+  </div>
+  <!-- End Metering Section -->
+
+  
+  
+  
+    <!-- Footer -->
+<!--
+  <footer class="w3-content w3-padding-64 w3-text-grey w3-xlarge">
+    <i class="fa fa-facebook-official w3-hover-opacity"></i>
+    <i class="fa fa-instagram w3-hover-opacity"></i>
+    <i class="fa fa-snapchat w3-hover-opacity"></i>
+    <i class="fa fa-pinterest-p w3-hover-opacity"></i>
+    <i class="fa fa-twitter w3-hover-opacity"></i>
+    <i class="fa fa-linkedin w3-hover-opacity"></i>
+    <p class="w3-medium">Powered by <a href="https://www.w3schools.com/w3css/default.asp" target="_blank" class="w3-hover-text-green">w3.css</a></p>
+  </footer>
+-->
+  <!-- End footer -->
+  
+
+<!-- END PAGE CONTENT -->
+</div>
+
+</body>
+</html>
+
