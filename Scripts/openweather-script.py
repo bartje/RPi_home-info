@@ -10,10 +10,21 @@ import logging.handlers
 from datetime import datetime
 import paho.mqtt.client as mqtt
 import paho.mqtt.publish as publish
+from lxml import etree
+#from io import StringIO
+#import urllib
 
+
+token_max = 15
+token = token_max
+sleeptime = 60
+host = "woezel.local"
+topic_now = "weather/now"
+topic_forecast = "weather/forecast"
+
+#wunderground_key =  e18dc0713576db3b
 
 # logging opzetten
-
 # Deafults
 LOG_FILENAME = "/tmp/openweather-script.log"
 LOG_LEVEL = logging.INFO  # Could be e.g. "DEBUG" or "WARNING"
@@ -44,64 +55,166 @@ class MyLogger(object):
                 if message.rstrip() != "":
                         self.logger.log(self.level, message.rstrip())
 
-# Replace stdout with logging to file at INFO level
-sys.stdout = MyLogger(logger, logging.INFO)
-# Replace stderr with logging to file at ERROR level
-sys.stderr = MyLogger(logger, logging.ERROR)
+# # Replace stdout with logging to file at INFO level
+# sys.stdout = MyLogger(logger, logging.INFO)
+# # Replace stderr with logging to file at ERROR level
+# sys.stderr = MyLogger(logger, logging.ERROR)
 
 logger.info("openweather-script started")
+
 
 while True:
 	logger.info("read weather")
 	
-	#openweathermap api gebruien en info opvragen in JSON-formaat
+	#openweathermap api gebruien en info opvragen in JSON-formaat en XML formaat
+	
+		
+	#Current Weater
 	try:    
-	    u = "http://api.openweathermap.org/data/2.5/weather?q=Schoten,be&units=metric&APPID=413426c26940f65e16f4a6097aa095d6"
-	    r = requests.get(u)
-	    j = json.loads(r.text)
+		u = "http://api.openweathermap.org/data/2.5/weather?q=Schoten,be&units=metric&APPID=413426c26940f65e16f4a6097aa095d6&mode"
+		r = requests.get(u)
+		data = json.loads(r.text)
+		u = "http://api.openweathermap.org/data/2.5/weather?q=Schoten,be&units=metric&APPID=413426c26940f65e16f4a6097aa095d6&mode=xml&lang=nl"
+		data_xml=etree.parse(u)
+		
+		
+				
 	except:
 	    sys.stderr.write("Couldn't load current conditions\n")
-	
-	logger.info("tijd bepalen")
-	logger.info(datetime.now().strftime("%Y-%m-%d %H:%M:%S"))
-	#print (datetime.now().strftime("%Y-%m-%d %H:%M:%S"))
-	#database openen en update uitvoeren op tabellen
-	conn = sqlite3.connect('/home/bartje/Sqlite/Weather.db')
-	c = conn.cursor()
-	
-	c.execute("UPDATE main SET temp = ?, humidity = ?, pressure = ?, temp_min = ?, temp_max = ? where id= '1'", (j['main']['temp'],j['main']['humidity'],j['main']['pressure'],j['main']['temp_min'],j['main']['temp_max']))
-	c.execute("UPDATE sys SET country = ?, sunrise = ?, sunset = ? where id= '1'", (j['sys']['country'],j['sys']['sunrise'],j['sys']['sunset']))
-	c.execute("UPDATE weather SET 'id_' = ?, main = ?, description = ?, icon = ? where id= '1'", (j['weather'][0]['id'],j['weather'][0]['main'],j['weather'][0]['description'],j['weather'][0]['icon']))
-	##c.execute("UPDATE wind SET speed = ?, deg = ? where id= '1'", (j['wind']['speed'],j['wind']['deg']))
-	#c.execute("UPDATE rain SET '3h' = ? where id= '1'", (j['rain']['3h'],))  #bestaat niet voor Schoten
-	c.execute("UPDATE clouds SET 'all' = ? where id= '1'", (j['clouds']['all'],))
-	#c.execute("UPDATE status SET 'time' = ? where id='1'", (datetime.now()))
-	
-	conn.commit()
-	conn.close()
-	
-	##client = mqtt.Client()
-	#client.connect("10.0.0.16",1883,60)
-	##client.connect("10.0.0.16")
-	#client.publish("test",j['wind']['speed'],qos=2, retain=True)
-	host = "woezel.local"
-	#logger.info(j)
-	for key1,val1 in j.items():
-		if key1 in ["wind", "main", "clouds","snow","sys","weather"]:  #probleem is dat weahter een list geeft
-			if isinstance(val1, list):  # het probleem oplossen dat weather als een list is gemaakt
-				val1 = val1[0]
-			
-			for key2,val2 in val1.items():
-				#logger.info(key2)
-				#logger.info(val2)
-				topic = "weather/now/" + key1 + "/"+ key2
-				#logger.info(topic)
-				##client.publish(topic,val2, qos=0)
-				publish.single(topic, val2, qos=2, hostname=host)
-				
+	else:
+		#j_now anders organiseren tot wat ik wil
 		
-	##client.disconnect
+		empty_data = {'wind':{'deg':-1,'speed':0},'clouds':{'all':0},'rain':{'3h':0},'snow':{'3h':0}}
+				
+		for k in empty_data.keys():
+			if not(k in data):
+				data[k] = empty_data[k]
+		
+		data['weather']=data['weather'][0]
+		data['rain']['rain_3h'] = data['rain'].pop('3h')
+		data['rain']['snow_3h'] = data['snow'].pop('3h')
+		data['wind']['wind_speed'] = data['wind'].pop('speed')
+		data['wind']['wind_deg'] = data['wind'].pop('deg')
+		data['clouds']['clouds'] = data['clouds'].pop('all')
+		data['weather']['weather_id'] = data['weather'].pop('id')
+		
+		#in main, steken we ook de tijd, sunrise en sunset mee als data
+		data['main']['time'] = data['dt']
+		data['main']['sunrise'] = data['sys']['sunrise']
+		data['main']['sunset'] = data['sys']['sunset']
+		
+		#overtollige data verwijderen
+		data_to_keep = ['main','wind','weather','clouds','rain','snow']
+		
+		j_now = {}
+		for k in data_to_keep:
+			for i in data[k]:	
+				j_now[i]=data[k][i]
+				
+		j_now['clouds_name']=data_xml.find('clouds').attrib['name']
+		#j_now['wind_deg_name']=data_xml.find('wind/direction').attrib['name']
+		j_now['wind_deg_code']=data_xml.find('wind/direction').attrib['code']
+		
+		# vertaal de windrichting naar het Nederlands
+		str = j_now['wind_deg_code']
+		str = str.replace("N","noord")
+		str = str.replace("S","zuid")
+		str = str.replace("E","oost")
+		str = str.replace("W","west")
+		j_now['wind_deg_name'] = str
+		
+		j_now['clouds_speed_name']=data_xml.find('wind/speed').attrib['name']
+		j_now['weather_value']=data_xml.find('weather').attrib['value']
+		
+		
+		publish.single(topic_now, json.dumps(j_now), qos=2, hostname=host, retain=True)
 	
+	#Forecast 5day every 3hours
+	if token >= token_max:
+		try:    
+		    u = "http://api.openweathermap.org/data/2.5/forecast?q=Schoten,be&units=metric&APPID=413426c26940f65e16f4a6097aa095d6&lang=nl"
+		    r = requests.get(u)
+		    data = json.loads(r.text)
+		    #u = "http://api.openweathermap.org/data/2.5/forecast?q=Schoten,be&units=metric&APPID=413426c26940f65e16f4a6097aa095d6&mode=xml&lang=nl"
+			#data_xml=etree.parse(u)
+		except:
+		    sys.stderr.write("Couldn't load current conditions\n")	
+		else:
+			# op eenzelfde manier inrichten als de j_now
+			#data_to_keep_forecast = ['list']
+			#j_forecast = {}
+			#for k in data_to_keep_forecast:
+			#	for i in data[k]:	
+			#		j_now[i]=data[k][i]
+			
+			#elke item in de list moet minstens volgende data hebben
+			empty_data = {'wind':{'deg':-1,'speed':0},'clouds':{'all':0},'rain':{'3h':0},'snow':{'3h':0}}
+			data_to_keep = ['main','wind','weather','clouds','rain','snow']
+			
+			#nog te checken of dit klopt... schijnt te kloppen (eerst deel toch)
+			#print(data['list'])
+			#elk item in de list afgaan, en hiermee het zelfde doen als de data_now
+			
+			j_forecast = {}
+			j_forecast['list']= []
+			for l in data['list']:	
+				empty_data = {'wind':{'deg':-1,'speed':0},'clouds':{'all':0},'rain':{'3h':0},'snow':{'3h':0}}
+				#print(l)
+				for k in empty_data.keys():
+					if not(k in l):				#check of de key bestaat
+						l[k] = empty_data[k]
+					if l[k] == {}:		#key bestaat misschien wel, maar is leeg
+						l[k] = empty_data[k]
+				l['weather']=l['weather'][0]
+				l['rain']['rain_3h'] = l['rain'].pop('3h')
+				l['snow']['snow_3h'] = l['snow'].pop('3h')
+				l['wind']['wind_speed'] = l['wind'].pop('speed')
+				l['wind']['wind_deg'] = l['wind'].pop('deg')
+				l['clouds']['clouds'] = l['clouds'].pop('all')
+				l['weather']['weather_id'] = l['weather'].pop('id')
+				
+				
+				#in main, steken we ook de tijd, sunrise en sunset mee als data
+				l['main']['time'] = l['dt']
+				#l['main']['sunrise'] = l['sys']['sunrise']
+				#l['main']['sunset'] = l['sys']['sunset']
+				#print(i)
+				#j_forecast['list'][i] = {}
+				#for k in data_to_keep:
+				#	for j in l[k]:	
+				#		j_forecast['list'][i][j]=l[k][j]
+			
+				j_forecast_temp = {}
+				for k in data_to_keep:
+					for i in l[k]:	
+						j_forecast_temp[i]=l[k][i]
+				
+				j_forecast['list'].append(j_forecast_temp)
+				#print(j_forecast['list'][i])
 
-	#aantal seconden wachten tot volgende keer dat de loop wordt doorlopen
-	time.sleep(60)
+			#for k in empty_data.keys():
+			#	for l in data['list']:
+			#		#print(l)
+			#		if not(k in l):  
+			#			l[k] = empty_data[k]
+			#			#print(l)
+			#print(j_forecast)
+			publish.single(topic_forecast, json.dumps(j_forecast), qos=2, hostname=host, retain=True)
+			token = 0
+	else:
+		token +=1
+	
+	
+		time.sleep(sleeptime)
+	
+	# connectie met DB --> moet in ander stuk gestoken worden
+	
+	
+	
+	
+	
+	
+	
+	
+	
+	
